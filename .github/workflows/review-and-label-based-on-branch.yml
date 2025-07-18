@@ -1,0 +1,69 @@
+name: "Team-specific PR rules: CompanyX vs Naarmann"
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+jobs:
+  team-review-workflow:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Assign reviewer and label based on branch prefix
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const pr = context.payload.pull_request;
+            const branch = pr.head.ref;
+            const author = pr.user.login;
+
+            const repoOwner = context.repo.owner;
+            const repoName = context.repo.repo;
+            const prNumber = pr.number;
+
+            const leadReviewer = "LeadDevCompanyX";
+            const reviewLabel = "review-required";
+            const commentPrefix = ":robot: Automated Notice:";
+
+            if (branch.startsWith("companyx/")) {
+              console.log(`Branch "${branch}" belongs to CompanyX.`);
+
+              // Add reviewer
+              await github.rest.pulls.requestReviewers({
+                owner: repoOwner,
+                repo: repoName,
+                pull_number: prNumber,
+                reviewers: [leadReviewer]
+              });
+
+              // Add label
+              await github.rest.issues.addLabels({
+                owner: repoOwner,
+                repo: repoName,
+                issue_number: prNumber,
+                labels: [reviewLabel]
+              });
+
+              // Add PR comment
+              await github.rest.issues.createComment({
+                owner: repoOwner,
+                repo: repoName,
+                issue_number: prNumber,
+                body: `${commentPrefix} Since this branch is prefixed with "companyx/", @${leadReviewer} has been automatically requested as a reviewer.`
+              });
+
+            } else if (branch.startsWith("naarmann/")) {
+              console.log(`Branch "${branch}" belongs to Naarmann – no mandatory reviewer required.`);
+              
+              await github.rest.issues.createComment({
+                owner: repoOwner,
+                repo: repoName,
+                issue_number: prNumber,
+                body: `${commentPrefix} Pull request detected as a Naarmann branch. No mandatory reviewer is required.`
+              });
+
+            } else {
+              console.log(`Branch "${branch}" does not match any known team pattern.`);
+              // Optional: Handle other branches or do nothing
+            }
