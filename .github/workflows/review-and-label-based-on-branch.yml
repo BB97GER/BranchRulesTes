@@ -22,7 +22,7 @@ jobs:
             const repoName = context.repo.repo;
             const prNumber = pr.number;
 
-            const leadReviewer = "LeadDevCompanyX";
+            const leadReviewer = "JanMerschkoetter";
             const reviewLabel = "review-required";
             const commentPrefix = ":robot: Automated Notice:";
 
